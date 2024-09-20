@@ -38,13 +38,21 @@ def decoder(image):
 
 def main():
     """The code prompts the user to choose between two options: Scan via image and Scan via WebCam"""
-    choice = int(input("1. Scan via image\n2. Scan via WebCam\n Choice: "))
+    try:
+        choice = int(input("1. Scan via image\n2. Scan via WebCam\n Choice: "))
+    except ValueError:
+        print("Invalid input. Please enter 1 or 2. ")
+        return
+
     if choice == 2:
         """Accessing webcam for images"""
         cap = cv2.VideoCapture(
             0)  # The code captures video frames from the webcam using cv2.VideoCapture(0). (0 refers to the default webcam)
         while True:  # It enters a loop that continuously captures frames and calls the decoder function on each frame to process and decode any barcodes present
             ret, image = cap.read()
+            if not ret:
+                print("Failed to capture image from webcam.")
+                break
             decoder(image)
             cv2.imshow("Image",
                        image)  # The processed frames with highlighted barcodes and decoded data are displayed using cv2.imshow
@@ -56,10 +64,17 @@ def main():
 
     else:
         # Scanning the qrcode in locally available image
-        img_path = input(
-            "Enter Image Path: ")  # This line prompts the user to enter the file path of the image containing the QR code
-        img = cv2.imread(
-            img_path)  # This line uses the cv2.imread function from OpenCV to load the image specified by the img_path into a NumPy array named img
+        try:
+            img_path = input(
+                "Enter Image Path: ")  # This line prompts the user to enter the file path of the image containing the QR code
+            img = cv2.imread(
+                img_path)  # This line uses the cv2.imread function from OpenCV to load the image specified by the img_path into a NumPy array named img
+            if img is None:
+                raise FileNotFoundError("Image not found. Please check the path and try again.")
+        except FileNotFoundError as e:
+            print(e)
+            return #The return statement at the end of the except block is used to exit the main function early if an exception is raised
+
         detector = cv2.QRCodeDetector()  # This line creates an instance of the QRCodeDetector class from OpenCV, which is used to detect and decode QR codes.
 
         """data, bbox, straight_qrcode = detector.detectAndDecode(img) This line calls the detectAndDecode method of the 
@@ -69,8 +84,10 @@ def main():
         straight_qrcode: This variable stores the straightened QR code image."""
 
         data, bbox, straight_qrcode = detector.detectAndDecode(img)  # etects and decodes QR codes within the image
-
-        print("QRCode Encode Data: ", data)
+        if data:
+            print("QRCode Encode Data: ", data)
+        else:
+            print("No QRCode found in the image")
 
 
 if __name__ == "__main__":
